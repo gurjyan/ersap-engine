@@ -57,7 +57,7 @@ public class OutputStreamFactory {
             if (hasHelp()) {
                 return;
             }
-            int numArgs = options.nonOptionArguments().size();
+            int numArgs = args.length;
             if (numArgs == 0) {
                 throw new EException("missing arguments");
             }
@@ -98,6 +98,7 @@ public class OutputStreamFactory {
                 System.out.println(factory.usage());
                 System.exit(0);
             }
+            int vtpPort = factory.options.valueOf(factory.initStreamPortVtp);
             // start input stream engines
             Jedis lake = new Jedis(factory.options.valueOf(factory.dataLakeHost));
             System.out.println("DataLake connection succeeded. ");
@@ -105,13 +106,13 @@ public class OutputStreamFactory {
 
             for (int i = 0; i < factory.options.valueOf(factory.numberOfStreams); i++) {
                 OutputStreamEngine_VTP engine = new OutputStreamEngine_VTP(
-                        factory.options.valueOf(factory.streamNamePrefix) + "_"
-                                + factory.options.valueOf(factory.initStreamPortVtp) + i,
+                        factory.options.valueOf(factory.streamNamePrefix) + "_" + vtpPort,
                         lake,
                         factory.options.valueOf(factory.threadPoolSize),
                         factory.options.valueOf(factory.statPeriod)
                 );
                 new Thread(engine).start();
+                vtpPort++;
             }
         } catch (EException e) {
             System.err.println("error: " + e.getMessage());

@@ -6,7 +6,6 @@ import redis.clients.jedis.Jedis;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
@@ -80,7 +79,7 @@ public class OutputStreamEngine_VTP implements Runnable {
         @Override
         public void run() {
             if (statLoop <= 0) {
-                System.out.println(Arrays.toString(streamName) + ": event rate =" + rate
+                System.out.println(new String(streamName) + ": event rate =" + rate
                         + " Hz.  data rate =" + totalData + " kB/s.");
                 statLoop = statLoopLimit;
             }

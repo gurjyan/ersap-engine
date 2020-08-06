@@ -6,7 +6,6 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import org.jlab.epsci.ersap.EException;
 import org.jlab.epsci.ersap.util.OptUtil;
-import redis.clients.jedis.Jedis;
 import java.util.Arrays;
 
 public class InputStreamFactory {
@@ -60,7 +59,7 @@ public class InputStreamFactory {
             if (hasHelp()) {
                 return;
             }
-            int numArgs = options.nonOptionArguments().size();
+            int numArgs = args.length;
             if (numArgs == 0) {
                 throw new EException("missing arguments");
             }
@@ -100,31 +99,30 @@ public class InputStreamFactory {
                 System.out.println(factory.usage());
                 System.exit(0);
             }
+            int vtpPort = factory.options.valueOf(factory.initStreamPortVtp);
             // start input stream engines
             if (factory.hasLake()) {
-                Jedis lake = new Jedis(factory.options.valueOf(factory.dataLakeHost));
-                System.out.println("DataLake connection succeeded. ");
-                System.out.println("DataLake ping - " + lake.ping());
-
                 for (int i = 0; i < factory.options.valueOf(factory.numberOfStreams); i++) {
                     InputStreamEngine_VTP engine = new InputStreamEngine_VTP(
-                            factory.options.valueOf(factory.streamNamePrefix) + "_" + 6000 + i,
-                            factory.options.valueOf(factory.initStreamPortVtp) + 1,
-                            lake,
+                            factory.options.valueOf(factory.streamNamePrefix) + vtpPort,
+                            vtpPort,
+                            factory.options.valueOf(factory.dataLakeHost),
                             factory.options.valueOf(factory.highWaterMark),
                             factory.options.valueOf(factory.threadPoolSize),
                             factory.options.valueOf(factory.statPeriod)
                     );
                     new Thread(engine).start();
+                    vtpPort++;
                 }
             } else {
                 for (int i = 0; i < factory.options.valueOf(factory.numberOfStreams); i++) {
                     InputStreamEngine_VTP engine = new InputStreamEngine_VTP(
-                            factory.options.valueOf(factory.streamNamePrefix) + "_" + 6000 + i,
-                            factory.options.valueOf(factory.initStreamPortVtp) + 1,
+                            factory.options.valueOf(factory.streamNamePrefix) + vtpPort,
+                            vtpPort,
                             factory.options.valueOf(factory.statPeriod)
                     );
                     new Thread(engine).start();
+                    vtpPort++;
                 }
             }
         } catch (EException e) {
