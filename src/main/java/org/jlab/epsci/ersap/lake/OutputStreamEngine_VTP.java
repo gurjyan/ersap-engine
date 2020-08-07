@@ -54,11 +54,13 @@ public class OutputStreamEngine_VTP implements Runnable {
 
     @Override
     public void run() {
-        if (dataLake.isConnected()) {
-            byte[] dataOfTheLake = dataLake.lpop(streamName);
-            if(dataOfTheLake != null) {
-                localQueue.add(dataOfTheLake);
-                lakeReads++;
+        while (true) {
+            if (dataLake.isConnected()) {
+                byte[] dataOfTheLake = dataLake.lpop(streamName);
+                if (dataOfTheLake != null) {
+                    localQueue.add(dataOfTheLake);
+                    lakeReads++;
+                }
             }
         }
     }
