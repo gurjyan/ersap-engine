@@ -61,7 +61,7 @@ public class OutputStreamFactory {
             if (numArgs == 0) {
                 throw new EException("missing arguments");
             }
-            if (hasLake()) {
+            if (!hasLake()) {
                 throw new EException("Data Lake host is not defined/");
             }
             if (!(numArgs == 12)) {

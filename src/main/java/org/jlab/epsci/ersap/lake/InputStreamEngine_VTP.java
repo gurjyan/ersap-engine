@@ -192,7 +192,7 @@ public class InputStreamEngine_VTP implements Runnable {
                             byte[] b = localQueue.poll();
                             if (b != null) {
                                 dataLake.lpush(streamName, b);
-                                dataLake.lpop(streamName);
+//                                dataLake.lpop(streamName);
                                 lakeWrites++;
                             }
                         }
