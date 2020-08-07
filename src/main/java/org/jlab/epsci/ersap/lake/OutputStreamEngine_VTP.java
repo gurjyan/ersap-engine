@@ -1,17 +1,13 @@
 package org.jlab.epsci.ersap.lake;
 
-import org.jlab.epsci.ersap.EException;
 import org.jlab.epsci.ersap.util.EUtil;
+import org.jlab.epsci.ersap.util.NonBlockingQueue;
 import redis.clients.jedis.Jedis;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * Multi-threaded data-lake output stream engine.
@@ -22,12 +18,13 @@ public class OutputStreamEngine_VTP implements Runnable {
     private final Jedis dataLake;
     private final byte[] streamName;
 
-    private final ExecutorService dataLakeReaderThreadPool;
-
     private final int statLoopLimit;
     private int statLoop;
     private double totalData;
     private int rate;
+    private int lakeReads;
+
+    private final NonBlockingQueue<byte[]> localQueue = new NonBlockingQueue<>(1000);
 
     /**
      * Data-lake output stream engine constructor.
@@ -41,37 +38,44 @@ public class OutputStreamEngine_VTP implements Runnable {
      */
     public OutputStreamEngine_VTP(String name, Jedis lake,
                                   int threadPoolSize, int statPeriod) {
-        EUtil.requireNonNull(name,"stream name");
-        EUtil.requireNonNull(lake,"data-lake object");
+        EUtil.requireNonNull(name, "stream name");
+        EUtil.requireNonNull(lake, "data-lake object");
         streamName = name.getBytes();
         dataLake = lake;
         statLoopLimit = statPeriod;
-        if (threadPoolSize <= 0) {
-            throw new IllegalArgumentException("threadPoolSize parameter must be larger than 0.");
-        }
         // Timer for measuring and printing statistics.
         Timer timer = new Timer();
         timer.schedule(new PrintRates(), 0, 1000);
-        // Thread pools for writing frames into the data-lake.
-        dataLakeReaderThreadPool = Executors.newFixedThreadPool(threadPoolSize);
+        // Threads to process data.
+        for (int i = 0; i < threadPoolSize; i++) {
+            new Thread(new Worker()).start();
+        }
     }
 
     @Override
     public void run() {
-        try {
-            if (dataLake.isConnected()) {
-                Future<byte[]> dataOfTheLake = dataLakeReaderThreadPool.submit(() -> dataLake.lpop(streamName));
-                ByteBuffer sFrame = ByteBuffer.wrap(dataOfTheLake.get());
-                sFrame.order(ByteOrder.LITTLE_ENDIAN);
-                totalData = totalData + (double) sFrame.limit() / 1000.0;
-                rate++;
+        if (dataLake.isConnected()) {
+            byte[] dataOfTheLake = dataLake.lpop(streamName);
+            localQueue.add(dataOfTheLake);
+            lakeReads++;
+        }
+    }
 
-                // start decoding the frame here
+    private class Worker implements Runnable {
 
-            } else throw new EException("Data-lake communication error.");
-        } catch (InterruptedException | ExecutionException | EException e) {
-            System.out.println(e.getMessage());
-            System.exit(1);
+        @Override
+        public void run() {
+            while (true) {
+                byte[] b = localQueue.poll();
+                if (b != null) {
+                    ByteBuffer sFrame = ByteBuffer.wrap(b);
+                    sFrame.order(ByteOrder.LITTLE_ENDIAN);
+                    // start decoding the frame here
+
+                    totalData = totalData + (double) sFrame.limit() / 1000.0;
+                    rate++;
+                }
+            }
         }
     }
 
@@ -80,10 +84,13 @@ public class OutputStreamEngine_VTP implements Runnable {
         public void run() {
             if (statLoop <= 0) {
                 System.out.println(new String(streamName) + ": event rate =" + rate
-                        + " Hz.  data rate =" + totalData + " kB/s.");
+                        + " Hz.  data rate =" + totalData + " kB/s."
+                        + " lake reads =" + lakeReads + " Hz."
+                );
                 statLoop = statLoopLimit;
             }
             rate = 0;
+            lakeReads = 0;
             totalData = 0;
             statLoop--;
         }
