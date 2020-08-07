@@ -106,7 +106,7 @@ public class OutputStreamFactory {
 
             for (int i = 0; i < factory.options.valueOf(factory.numberOfStreams); i++) {
                 OutputStreamEngine_VTP engine = new OutputStreamEngine_VTP(
-                        factory.options.valueOf(factory.streamNamePrefix) + "_" + vtpPort,
+                        factory.options.valueOf(factory.streamNamePrefix) + vtpPort,
                         lake,
                         factory.options.valueOf(factory.threadPoolSize),
                         factory.options.valueOf(factory.statPeriod)
