@@ -1,4 +1,4 @@
-package org.jlab.epsci.ersap.lake;
+package org.jlab.epsci.ersap.lake.redis;
 
 import org.jlab.epsci.ersap.util.EUtil;
 import org.jlab.epsci.ersap.util.NonBlockingQueue;

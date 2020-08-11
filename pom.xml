@@ -64,6 +64,12 @@
       <version>5.0.4</version>
     </dependency>
 
+<!--      <dependency>-->
+<!--        <groupId>com.aerospike</groupId>-->
+<!--        <artifactId>aerospike-client</artifactId>-->
+<!--        <version>4.4.15</version>-->
+<!--      </dependency>-->
+
   </dependencies>
 
   <build>

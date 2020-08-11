@@ -153,10 +153,9 @@ public class EUtil {
         return b;
     }
 
-    public static void busyWaitMicros(long micros){
-        long waitUntil = System.nanoTime() + (micros * 1_000);
-        while(waitUntil > System.nanoTime()){
-        }
+    public static void busyWaitMicros(long delay){
+        long start = System.nanoTime();
+        while(System.nanoTime() - start < delay);
     }
 
     public static <T> T requireNonNull(T obj, String desc) {

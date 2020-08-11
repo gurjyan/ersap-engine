@@ -1,4 +1,4 @@
-package org.jlab.epsci.ersap.lake;
+package org.jlab.epsci.ersap.lake.redis;
 
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
@@ -6,21 +6,21 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import org.jlab.epsci.ersap.EException;
 import org.jlab.epsci.ersap.util.OptUtil;
-import redis.clients.jedis.Jedis;
 
 import java.util.Arrays;
 
-public class OutputStreamFactory {
+public class InputStreamFactory {
     private final OptionSpec<String> streamNamePrefix;
     private final OptionSpec<Integer> initStreamPortVtp;
     private final OptionSpec<Integer> numberOfStreams;
     private final OptionSpec<Integer> statPeriod;
     private final OptionSpec<String> dataLakeHost;
     private final OptionSpec<Integer> threadPoolSize;
+    private final OptionSpec<Integer> highWaterMark;
     private final OptionParser parser;
     private OptionSet options;
 
-    public OutputStreamFactory() {
+    public InputStreamFactory() {
         parser = new OptionParser();
         streamNamePrefix = parser.accepts("n")
                 .withRequiredArg();
@@ -40,6 +40,9 @@ public class OutputStreamFactory {
                 .withRequiredArg()
                 .ofType(Integer.class)
                 .defaultsTo(2);
+        highWaterMark = parser.accepts("w")
+                .withRequiredArg()
+                .ofType(Integer.class);
         parser.acceptsAll(Arrays.asList("h", "help")).forHelp();
     }
 
@@ -61,19 +64,13 @@ public class OutputStreamFactory {
             if (numArgs == 0) {
                 throw new EException("missing arguments");
             }
-            if (!hasLake()) {
-                throw new EException("Data Lake host is not defined/");
-            }
-            if (!(numArgs == 12)) {
-                throw new EException("invalid number of arguments");
-            }
         } catch (OptionException e) {
             throw new EException(e.getMessage());
         }
     }
 
     public String usage() {
-        String wrapper = "output-stream-factory";
+        String wrapper = "input-stream-factory";
         return String.format("usage: %s [options] ", wrapper)
                 + String.format("%n%n  Options:%n")
                 + OptUtil.optionHelp("-n",
@@ -87,11 +84,13 @@ public class OutputStreamFactory {
                 + OptUtil.optionHelp("-l",
                 "Data-lake host name.")
                 + OptUtil.optionHelp("-t",
-                "Single stream worker pool size.");
+                "Single stream worker pool size.")
+                + OptUtil.optionHelp("-w",
+                "Max number of stream-frames to be stored in the data-lake.");
     }
 
     public static void main(String[] args) {
-        OutputStreamFactory factory = new OutputStreamFactory();
+        InputStreamFactory factory = new InputStreamFactory();
         try {
             factory.parse(args);
             if (factory.hasHelp()) {
@@ -100,19 +99,19 @@ public class OutputStreamFactory {
             }
             int vtpPort = factory.options.valueOf(factory.initStreamPortVtp);
             // start input stream engines
-            Jedis lake = new Jedis(factory.options.valueOf(factory.dataLakeHost));
-            System.out.println("DataLake connection succeeded. ");
-            System.out.println("DataLake ping - " + lake.ping());
-
-            for (int i = 0; i < factory.options.valueOf(factory.numberOfStreams); i++) {
-                OutputStreamEngine_VTP engine = new OutputStreamEngine_VTP(
-                        factory.options.valueOf(factory.streamNamePrefix) + vtpPort,
-                        lake,
-                        factory.options.valueOf(factory.threadPoolSize),
-                        factory.options.valueOf(factory.statPeriod)
-                );
-                new Thread(engine).start();
-                vtpPort++;
+            if (factory.hasLake()) {
+                for (int i = 0; i < factory.options.valueOf(factory.numberOfStreams); i++) {
+                    InputStreamEngine_VTP engine = new InputStreamEngine_VTP(
+                            factory.options.valueOf(factory.streamNamePrefix) + vtpPort,
+                            vtpPort,
+                            factory.options.valueOf(factory.dataLakeHost),
+                            factory.options.valueOf(factory.highWaterMark),
+                            factory.options.valueOf(factory.threadPoolSize),
+                            factory.options.valueOf(factory.statPeriod)
+                    );
+                    new Thread(engine).start();
+                    vtpPort++;
+                }
             }
         } catch (EException e) {
             System.err.println("error: " + e.getMessage());
