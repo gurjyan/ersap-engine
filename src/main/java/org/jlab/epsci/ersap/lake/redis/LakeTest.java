@@ -19,6 +19,7 @@ public class LakeTest {
     private static BigInteger FRAME_TIME;
     private static final long ft_const = 65536L;
     private static int streamSourcePort = 6000;
+    private static int redisPort = 7771;
     private static String streamSourceName = "s1";
 
     private volatile double totalData;
@@ -48,7 +49,7 @@ public class LakeTest {
         redisReaderService = Executors.newFixedThreadPool(4);
 
         // redis.. ====================================
-        dataLake = new Jedis("localhost");
+        dataLake = new Jedis("localhost", redisPort);
         System.out.println("DataLake connection succeeded. ");
         System.out.println("DataLake ping - " + dataLake.ping());
 
@@ -138,6 +139,13 @@ public class LakeTest {
             }
             streamSourcePort = Integer.parseInt(args[1]);
             streamSourceName = args[2];
+        } else if (args.length == 4) {
+            if (args[0].equals("-dl")) {
+                pushDL = true;
+            }
+            streamSourcePort = Integer.parseInt(args[1]);
+            streamSourceName = args[2];
+            redisPort = Integer.parseInt(args[3]);
         }
         LakeTest sr = new LakeTest();
         while (true) sr.readSoftStream();

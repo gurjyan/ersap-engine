@@ -12,6 +12,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Multi-threaded data-lake input stream engine.
@@ -23,6 +24,7 @@ public class InputStreamEngine_VTP implements Runnable {
     private DataInputStream dataInputStream;
 
     private final String dlHost;
+    private final int dlPort;
     private final int streamHighWaterMark;
     private final byte[] streamName;
     private long inLakeFrameNumbers;
@@ -34,6 +36,9 @@ public class InputStreamEngine_VTP implements Runnable {
     private double totalData;
     private int rate;
     private int lakeWrites;
+
+    private long prev_rec_number;
+    private AtomicLong missed_record;
 
 
     private final NonBlockingQueue<byte[]> localQueue = new NonBlockingQueue<>(1000);
@@ -54,6 +59,7 @@ public class InputStreamEngine_VTP implements Runnable {
      * @param name           VTP stream name (e.g. detector/crate/section)
      * @param port           The port number where VTP sends stream frames
      * @param lakeHost       The host of the data-lake
+     * @param lakePort       The port number of the data-lake
      * @param highWaterMark  Max number of frames in the data-lake.
      * @param threadPoolSize Thread pool size
      * @param statPeriod     The period to print statistics. Note that
@@ -61,9 +67,13 @@ public class InputStreamEngine_VTP implements Runnable {
      *                       separate Timer thread.
      */
     public InputStreamEngine_VTP(String name, int port,
-                                 String lakeHost, int highWaterMark,
+                                 String lakeHost, int lakePort,
+                                 int highWaterMark,
                                  int threadPoolSize, int statPeriod) {
         EUtil.requireNonNull(name, "stream name");
+
+        missed_record = new AtomicLong(0);
+
         streamName = name.getBytes();
         if (port <= 0) {
             throw new IllegalArgumentException("Illegal port number.");
@@ -71,11 +81,11 @@ public class InputStreamEngine_VTP implements Runnable {
         statLoopLimit = statPeriod;
         EUtil.requireNonNull(lakeHost, "data-lake object");
         dlHost = lakeHost;
-
+        dlPort = lakePort;
         streamHighWaterMark = highWaterMark;
 
         if (threadPoolSize <= 0) {
-            throw new IllegalArgumentException("threadPoolSize parameter must be larger than 0.");
+            throw new IllegalArgumentException("ThreadPoolSize parameter must be larger than 0.");
         }
         this.threadPoolSize = threadPoolSize;
 
@@ -111,10 +121,26 @@ public class InputStreamEngine_VTP implements Runnable {
         while (true) {
             try {
                 // first word is source ID
-                dataInputStream.readInt();
+                int source_id = Integer.reverseBytes(dataInputStream.readInt());
                 int total_length = Integer.reverseBytes(dataInputStream.readInt());
+                int payload_length = Integer.reverseBytes(dataInputStream.readInt());
+                int compressed_length = Integer.reverseBytes(dataInputStream.readInt());
+                int magic = Integer.reverseBytes(dataInputStream.readInt());
+
+                int format_version = Integer.reverseBytes(dataInputStream.readInt());
+                int flags = Integer.reverseBytes(dataInputStream.readInt());
+                long record_number = EUtil.llSwap(Long.reverseBytes(dataInputStream.readLong()));
+                long ts_sec = EUtil.llSwap(Long.reverseBytes(dataInputStream.readLong()));
+                long ts_nsec = EUtil.llSwap(Long.reverseBytes(dataInputStream.readLong()));
+
+                missed_record.set(missed_record.get() + (record_number - (prev_rec_number + 1)));
+                prev_rec_number = record_number;
+
+                byte[] dataBuffer = new byte[total_length - (13 * 4)];
+
                 // note that we already read 2 words: source and total_length
-                byte[] dataBuffer = new byte[total_length - (2 * 4)];
+//                byte[] dataBuffer = new byte[total_length - (2 * 4)];
+
                 dataInputStream.readFully(dataBuffer);
                 // write to the non-blocking queue
                 localQueue.add(dataBuffer);
@@ -132,7 +158,7 @@ public class InputStreamEngine_VTP implements Runnable {
         private final Jedis dataLake;
 
         public Worker() {
-            dataLake = new Jedis(dlHost);
+            dataLake = new Jedis(dlHost, dlPort);
             System.out.println("DataLake connection succeeded. ");
             System.out.println("DataLake ping - " + dataLake.ping());
         }
@@ -172,12 +198,14 @@ public class InputStreamEngine_VTP implements Runnable {
                         + " Hz.  data rate =" + totalData + " kB/s."
                         + " lake frames = " + inLakeFrameNumbers
                         + " lake writes = " + lakeWrites
+                        + " missed rate = " + missed_record.get() + " Hz."
                 );
                 statLoop = statLoopLimit;
             }
             rate = 0;
             totalData = 0;
             lakeWrites = 0;
+            missed_record.set(0);
             statLoop--;
         }
     }

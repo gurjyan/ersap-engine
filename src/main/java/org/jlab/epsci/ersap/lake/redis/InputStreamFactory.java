@@ -15,6 +15,7 @@ public class InputStreamFactory {
     private final OptionSpec<Integer> numberOfStreams;
     private final OptionSpec<Integer> statPeriod;
     private final OptionSpec<String> dataLakeHost;
+    private final OptionSpec<Integer> dataLakePort;
     private final OptionSpec<Integer> threadPoolSize;
     private final OptionSpec<Integer> highWaterMark;
     private final OptionParser parser;
@@ -36,6 +37,9 @@ public class InputStreamFactory {
                 .defaultsTo(10);
         dataLakeHost = parser.accepts("l")
                 .withRequiredArg();
+        dataLakePort = parser.accepts("d")
+                .withRequiredArg()
+                .ofType(Integer.class);;
         threadPoolSize = parser.accepts("t")
                 .withRequiredArg()
                 .ofType(Integer.class)
@@ -83,6 +87,8 @@ public class InputStreamFactory {
                 "Period for printing statistics in second.")
                 + OptUtil.optionHelp("-l",
                 "Data-lake host name.")
+                + OptUtil.optionHelp("-d",
+                "Data-lake port number.")
                 + OptUtil.optionHelp("-t",
                 "Single stream worker pool size.")
                 + OptUtil.optionHelp("-w",
@@ -105,6 +111,7 @@ public class InputStreamFactory {
                             factory.options.valueOf(factory.streamNamePrefix) + vtpPort,
                             vtpPort,
                             factory.options.valueOf(factory.dataLakeHost),
+                            factory.options.valueOf(factory.dataLakePort),
                             factory.options.valueOf(factory.highWaterMark),
                             factory.options.valueOf(factory.threadPoolSize),
                             factory.options.valueOf(factory.statPeriod)

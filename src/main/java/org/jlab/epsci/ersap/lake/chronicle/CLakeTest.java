@@ -1,4 +1,4 @@
-package org.jlab.epsci.ersap.lake.queue;
+package org.jlab.epsci.ersap.lake.chronicle;
 
 import net.openhft.chronicle.bytes.Bytes;
 import net.openhft.chronicle.queue.ExcerptAppender;
