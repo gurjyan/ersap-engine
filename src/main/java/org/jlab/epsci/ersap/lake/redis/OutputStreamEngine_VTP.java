@@ -15,8 +15,9 @@ import java.util.TimerTask;
  */
 public class OutputStreamEngine_VTP implements Runnable {
 
-    private final Jedis dataLake;
     private final byte[] streamName;
+
+    private final int threadPoolSize;
 
     private final int statLoopLimit;
     private int statLoop;
@@ -24,36 +25,50 @@ public class OutputStreamEngine_VTP implements Runnable {
     private int rate;
     private int lakeReads;
 
+    private final Jedis dataLake;
+
     private final NonBlockingQueue<byte[]> localQueue = new NonBlockingQueue<>(1000);
 
     /**
      * Data-lake output stream engine constructor.
      *
      * @param name           VTP stream name (e.g. detector/crate/section)
-     * @param lake           The data-lake connection object
+     * @param lakeHost       Data-lake host name
+     * @param lakePort       Data-lake port number
      * @param threadPoolSize Thread pool size
      * @param statPeriod     The period to print statistics. Note that
      *                       statistics are measured every second by the
      *                       separate Timer thread.
      */
-    public OutputStreamEngine_VTP(String name, Jedis lake,
+    public OutputStreamEngine_VTP(String name, String lakeHost, int lakePort,
                                   int threadPoolSize, int statPeriod) {
         EUtil.requireNonNull(name, "stream name");
-        EUtil.requireNonNull(lake, "data-lake object");
         streamName = name.getBytes();
-        dataLake = lake;
+        EUtil.requireNonNull(lakeHost, "data-lake object");
+        this.threadPoolSize = threadPoolSize;
+
         statLoopLimit = statPeriod;
         // Timer for measuring and printing statistics.
         Timer timer = new Timer();
         timer.schedule(new PrintRates(), 0, 1000);
-        // Threads to process data.
-        for (int i = 0; i < threadPoolSize; i++) {
-            new Thread(new Worker()).start();
-        }
+
+        dataLake = new Jedis(lakeHost, lakePort);
+        System.out.println("DataLake connection succeeded. ");
+        System.out.println("DataLake ping - " + dataLake.ping());
     }
 
     @Override
     public void run() {
+        // Threads to process data.
+        for (int i = 0; i < threadPoolSize; i++) {
+            new Thread(new Worker()).start();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         while (true) {
             if (dataLake.isConnected()) {
                 byte[] dataOfTheLake = dataLake.lpop(streamName);

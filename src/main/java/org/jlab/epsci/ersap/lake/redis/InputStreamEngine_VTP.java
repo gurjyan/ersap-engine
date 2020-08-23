@@ -38,7 +38,7 @@ public class InputStreamEngine_VTP implements Runnable {
     private int lakeWrites;
 
     private long prev_rec_number;
-    private AtomicLong missed_record;
+    private final AtomicLong missed_record;
 
 
     private final NonBlockingQueue<byte[]> localQueue = new NonBlockingQueue<>(1000);
@@ -175,7 +175,7 @@ public class InputStreamEngine_VTP implements Runnable {
                             byte[] b = localQueue.poll();
                             if (b != null) {
                                 dataLake.lpush(streamName, b);
-                                dataLake.lpop(streamName);
+//                                dataLake.lpop(streamName);
                                 lakeWrites++;
                             }
                         }

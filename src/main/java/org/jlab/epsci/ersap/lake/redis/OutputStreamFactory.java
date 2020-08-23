@@ -16,6 +16,7 @@ public class OutputStreamFactory {
     private final OptionSpec<Integer> numberOfStreams;
     private final OptionSpec<Integer> statPeriod;
     private final OptionSpec<String> dataLakeHost;
+    private final OptionSpec<Integer> dataLakePort;
     private final OptionSpec<Integer> threadPoolSize;
     private final OptionParser parser;
     private OptionSet options;
@@ -36,6 +37,9 @@ public class OutputStreamFactory {
                 .defaultsTo(10);
         dataLakeHost = parser.accepts("l")
                 .withRequiredArg();
+        dataLakePort = parser.accepts("d")
+                .withRequiredArg()
+                .ofType(Integer.class);;
         threadPoolSize = parser.accepts("t")
                 .withRequiredArg()
                 .ofType(Integer.class)
@@ -63,9 +67,6 @@ public class OutputStreamFactory {
             }
             if (!hasLake()) {
                 throw new EException("Data Lake host is not defined/");
-            }
-            if (!(numArgs == 12)) {
-                throw new EException("invalid number of arguments");
             }
         } catch (OptionException e) {
             throw new EException(e.getMessage());
@@ -102,13 +103,15 @@ public class OutputStreamFactory {
             // start input stream engines
 
             for (int i = 0; i < factory.options.valueOf(factory.numberOfStreams); i++) {
-                Jedis lake = new Jedis(factory.options.valueOf(factory.dataLakeHost));
+                Jedis lake = new Jedis(factory.options.valueOf(factory.dataLakeHost),
+                        factory.options.valueOf(factory.dataLakePort));
                 System.out.println("DataLake connection succeeded. ");
                 System.out.println("DataLake ping - " + lake.ping());
 
                 OutputStreamEngine_VTP engine = new OutputStreamEngine_VTP(
                         factory.options.valueOf(factory.streamNamePrefix) + vtpPort,
-                        lake,
+                        factory.options.valueOf(factory.dataLakeHost),
+                        factory.options.valueOf(factory.dataLakePort),
                         factory.options.valueOf(factory.threadPoolSize),
                         factory.options.valueOf(factory.statPeriod)
                 );
