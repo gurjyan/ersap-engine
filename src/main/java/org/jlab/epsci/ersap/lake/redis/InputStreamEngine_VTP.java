@@ -84,6 +84,7 @@ public class InputStreamEngine_VTP implements Runnable {
         dlPort = lakePort;
         streamHighWaterMark = highWaterMark;
 
+
         if (threadPoolSize <= 0) {
             throw new IllegalArgumentException("ThreadPoolSize parameter must be larger than 0.");
         }
