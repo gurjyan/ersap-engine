@@ -137,7 +137,8 @@ public class InputStreamEngine_VTP implements Runnable {
                 missed_record.set(missed_record.get() + (record_number - (prev_rec_number + 1)));
                 prev_rec_number = record_number;
 
-                byte[] dataBuffer = new byte[total_length - (13 * 4)];
+//                byte[] dataBuffer = new byte[total_length - (13 * 4)];
+                byte[] dataBuffer = new byte[payload_length];
 
                 // note that we already read 2 words: source and total_length
 //                byte[] dataBuffer = new byte[total_length - (2 * 4)];
@@ -176,7 +177,7 @@ public class InputStreamEngine_VTP implements Runnable {
                             byte[] b = localQueue.poll();
                             if (b != null) {
                                 dataLake.lpush(streamName, b);
-//                                dataLake.lpop(streamName);
+                                dataLake.lpop(streamName);
                                 lakeWrites++;
                             }
                         }

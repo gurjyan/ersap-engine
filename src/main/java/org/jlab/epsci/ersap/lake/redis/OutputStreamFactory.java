@@ -39,7 +39,7 @@ public class OutputStreamFactory {
                 .withRequiredArg();
         dataLakePort = parser.accepts("d")
                 .withRequiredArg()
-                .ofType(Integer.class);;
+                .ofType(Integer.class);
         threadPoolSize = parser.accepts("t")
                 .withRequiredArg()
                 .ofType(Integer.class)
