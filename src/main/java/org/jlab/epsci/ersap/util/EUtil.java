@@ -161,4 +161,51 @@ public class EUtil {
     public static <T> T requireNonNull(T obj, String desc) {
         return Objects.requireNonNull(obj, "null " + desc);
     }
+
+
+
+    public static void decodeVtpPayload(byte[] payload) {
+        if (payload == null) return;
+        ByteBuffer bb = ByteBuffer.wrap(payload);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        int[] slot_ind = new int[8];
+        int[] slot_len = new int[8];
+        long tag = EUtil.getUnsignedInt(bb);
+        if ((tag & 0x8FFF8000L) == 0x80000000L) {
+
+            for (int jj = 0; jj < 8; jj++) {
+                slot_ind[jj] = EUtil.getUnsignedShort(bb);
+                slot_len[jj] = EUtil.getUnsignedShort(bb);
+            }
+            for (int i = 0; i < 8; i++) {
+                if (slot_len[i] > 0) {
+                    bb.position(slot_ind[i]*4);
+//                    System.out.println("at entrance "+bb.position()+
+//                            " words = "+slot_len[i]/4+
+//                            " slot_ind = "+slot_ind[i]+
+//                            " slot_len = "+slot_len[i]);
+                    int type = 0;
+                    for (int j = 0; j < slot_len[i]; j++) {
+                        int val = bb.getInt();
+                        if ((val & 0x80000000) == 0x80000000) {
+                            type = (val >> 15) & 0xFFFF;
+                            int rocid = (val >> 8) & 0x007F;
+                            int slot = (val) & 0x001F;
+                            System.out.println("\nrocid = "+rocid+" slot = "+slot);
+                            System.out.println("----------------------------------");
+                        } else if (type == 0x0001) /* FADC hit type */ {
+                            int q = (val) & 0x1FFF;
+                            int ch = (val >> 13) & 0x000F;
+                            int t = ((val >> 17) & 0x3FFF) * 4;
+                            System.out.println("q = "+q+ " ch = "+ch+" t = "+t);
+                        }
+                    }
+                }
+            }
+        } else {
+            System.out.println("........");
+            System.exit(0);
+        }
+    }
+
 }

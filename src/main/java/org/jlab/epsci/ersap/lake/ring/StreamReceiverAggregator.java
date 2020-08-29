@@ -100,12 +100,15 @@ public class StreamReceiverAggregator {
                 long ts_sec = EUtil.llSwap(Long.reverseBytes(dataInputStream.readLong()));
                 long ts_nsec = EUtil.llSwap(Long.reverseBytes(dataInputStream.readLong()));
 
-                byte[] dataBuffer = new byte[total_length - (13 * 4)]; // for soft_soure
-//                byte[] dataBuffer = new byte[payload_length];
+//                byte[] dataBuffer = new byte[total_length - (13 * 4)]; // for soft_soure
+                byte[] dataBuffer = new byte[payload_length];
                 dataInputStream.readFully(dataBuffer);
 
                 // fill event to write it into the ring
-                producer.onData(record_number,payload_length,dataBuffer);
+//                producer.onData(record_number,payload_length,dataBuffer);
+
+                EUtil.decodeVtpPayload(dataBuffer);
+
 
                 // collect statistics
                 missed_record = missed_record + (record_number - (prev_rec_number + 1));
@@ -142,7 +145,7 @@ public class StreamReceiverAggregator {
 
     public static void main(String[] args) {
 
-        new StreamReceiverAggregator(6000);
+        new StreamReceiverAggregator(Integer.parseInt(args[0]));
     }
 
 }

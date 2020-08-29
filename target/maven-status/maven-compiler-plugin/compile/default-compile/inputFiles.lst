@@ -12,9 +12,11 @@
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/util/ConcurrentFIFO.java
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/lake/chronicle/CLakeTest.java
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/EException.java
+/Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/lake/ring/HitTime.java
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/util/NonBlockingQueue.java
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/util/EUtil.java
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/lake/ring/StreamEventFactory.java
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/lake/ring/StreamEventHandler.java
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/lake/chronicle/ThroughputPerfMain.java
 /Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/lake/redis/OutputStreamFactory.java
+/Users/gurjyan/Devel/clas12_vtp/ersap-engine/src/main/java/org/jlab/epsci/ersap/lake/ring/RawData.java
