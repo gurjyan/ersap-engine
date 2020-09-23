@@ -1,11 +1,10 @@
 package org.jlab.epsci.ersap.util;
 
-import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Objects;
+import java.util.*;
 
 public class EUtil {
     private static final byte[] i32 = new byte[4];
@@ -153,15 +152,14 @@ public class EUtil {
         return b;
     }
 
-    public static void busyWaitMicros(long delay){
+    public static void busyWaitMicros(long delay) {
         long start = System.nanoTime();
-        while(System.nanoTime() - start < delay);
+        while (System.nanoTime() - start < delay) ;
     }
 
     public static <T> T requireNonNull(T obj, String desc) {
         return Objects.requireNonNull(obj, "null " + desc);
     }
-
 
 
     public static void decodeVtpPayload(byte[] payload) {
@@ -179,7 +177,7 @@ public class EUtil {
             }
             for (int i = 0; i < 8; i++) {
                 if (slot_len[i] > 0) {
-                    bb.position(slot_ind[i]*4);
+                    bb.position(slot_ind[i] * 4);
 //                    System.out.println("at entrance "+bb.position()+
 //                            " words = "+slot_len[i]/4+
 //                            " slot_ind = "+slot_ind[i]+
@@ -191,13 +189,13 @@ public class EUtil {
                             type = (val >> 15) & 0xFFFF;
                             int rocid = (val >> 8) & 0x007F;
                             int slot = (val) & 0x001F;
-                            System.out.println("\nrocid = "+rocid+" slot = "+slot);
+                            System.out.println("\nrocid = " + rocid + " slot = " + slot);
                             System.out.println("----------------------------------");
                         } else if (type == 0x0001) /* FADC hit type */ {
                             int q = (val) & 0x1FFF;
                             int ch = (val >> 13) & 0x000F;
                             int t = ((val >> 17) & 0x3FFF) * 4;
-                            System.out.println("q = "+q+ " ch = "+ch+" t = "+t);
+                            System.out.println("q = " + q + " ch = " + ch + " t = " + t);
                         }
                     }
                 }
@@ -208,4 +206,49 @@ public class EUtil {
         }
     }
 
+    public static byte[] addByteArrays(byte[] a, byte[] b) {
+        byte[] c = new byte[a.length + b.length];
+        System.arraycopy(a, 0, c, 0, a.length);
+        System.arraycopy(b, 0, c, a.length, b.length);
+        return c;
+    }
+
+    public static byte[] object2ByteArray(Object o) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(o);
+        oos.flush();
+        return bos.toByteArray();
+    }
+
+    public static Object byteArray2Object(byte[] data) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream in = new ByteArrayInputStream(data);
+        ObjectInputStream is = new ObjectInputStream(in);
+        return is.readObject();
+    }
+
+    public static Map<String, List<Integer>> getMultiplePeaks(int[] arr) {
+        List<Integer> pos = new ArrayList<>();
+        List<Integer> pea = new ArrayList<>();
+        Map<String, List<Integer>> ma = new HashMap<>();
+        int cur = 0, pre = 0;
+        for (int a = 1; a < arr.length; a++) {
+            if (arr[a] > arr[cur]) {
+                pre = cur;
+                cur = a;
+            } else {
+                if (arr[a] < arr[cur])
+                    if (arr[pre] < arr[cur]) {
+                        pos.add(cur);
+                        pea.add(arr[cur]);
+                    }
+                pre = cur;
+                cur = a;
+            }
+
+        }
+        ma.put("pos", pos);
+        ma.put("peaks", pea);
+        return ma;
+    }
 }
