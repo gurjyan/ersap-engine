@@ -1,5 +1,7 @@
 package org.jlab.epsci.ersap.util;
 
+import org.jlab.epsci.ersap.lake.ring.AdcHit;
+
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -226,6 +228,19 @@ public class EUtil {
         ObjectInputStream is = new ObjectInputStream(in);
         return is.readObject();
     }
+
+public static Map<Integer, Integer> streamSlice(BigInteger leading, BigInteger trailing,
+                                                   ArrayList<AdcHit> vtpStream){
+        vtpStream
+                .stream()
+                .filter(t -> (t.getTime().compareTo(leading) > 0) && (t.getTime().compareTo(trailing) < 0))
+                .collect()
+
+
+}
+
+
+
 
     public static Map<String, List<Integer>> getMultiplePeaks(int[] arr) {
         List<Integer> pos = new ArrayList<>();

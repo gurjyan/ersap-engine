@@ -143,19 +143,19 @@ public class Consumer extends Thread {
                 ArrayList<AdcHit> evt =
                         decodePayload(buf.getRecordNumber().multiply(EUtil.toUnsignedBigInteger(65536L)),
                                 buf.getPayload());
-                byte[] d = EUtil.object2ByteArray(evt);
-                fileSize = fileSize + d.length;
-                if (fileSize >= maxFileSize) {
-                    bout.flush();
-                    bout.close();
-                    out.close();
-                    increment++;
-                    fileName = "tf_beam_" +runNumber+"_"+ increment + ".ers";
-                    out = new FileOutputStream(fileName, true);
-                    bout = new BufferedOutputStream(out);
-                    fileSize = 0;
-                }
-                bout.write(d);
+//                byte[] d = EUtil.object2ByteArray(evt);
+//                fileSize = fileSize + d.length;
+//                if (fileSize >= maxFileSize) {
+//                    bout.flush();
+//                    bout.close();
+//                    out.close();
+//                    increment++;
+//                    fileName = "tf_beam_" +runNumber+"_"+ increment + ".ers";
+//                    out = new FileOutputStream(fileName, true);
+//                    bout = new BufferedOutputStream(out);
+//                    fileSize = 0;
+//                }
+//                bout.write(d);
 
                 put();
             }
