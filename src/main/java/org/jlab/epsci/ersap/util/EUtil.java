@@ -7,6 +7,9 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.summingInt;
 
 public class EUtil {
     private static final byte[] i32 = new byte[4];
@@ -229,18 +232,31 @@ public class EUtil {
         return is.readObject();
     }
 
-public static Map<Integer, Integer> streamSlice(BigInteger leading, BigInteger trailing,
-                                                   ArrayList<AdcHit> vtpStream){
-        vtpStream
+    public static Map<Integer, Integer> streamSlice(BigInteger leading, BigInteger trailing,
+                                                    ArrayList<AdcHit> vtpStream) {
+        return vtpStream
                 .stream()
                 .filter(t -> (t.getTime().compareTo(leading) > 0) && (t.getTime().compareTo(trailing) < 0))
-                .collect()
+                .collect(Collectors.groupingBy(
+                        v -> encodeCSC(v.getCrate(), v.getSlot(), v.getChannel()), summingInt(AdcHit::getQ)));
+    }
 
 
-}
+    public static int encodeCSC(int crate, int slot, int channel) {
+        return (crate << 16) | (slot << 8) | (channel << 4);
+    }
 
+    public static int decodeCrateNumber(int csc) {
+        return csc >>> 16;
+    }
 
+    public static int decodeSlotNumber(int csc) {
+        return csc & 0x000000f0;
+    }
 
+    public static int decodeChannelNumber(int csc) {
+        return csc & 0x0000000f;
+    }
 
     public static Map<String, List<Integer>> getMultiplePeaks(int[] arr) {
         List<Integer> pos = new ArrayList<>();
